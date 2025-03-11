@@ -504,7 +504,7 @@ SELECT
       {
         $query .= ', expiry_date';
       }
-      
+
       $query .= '
   FROM '.IMAGES_TABLE.'
   WHERE id IN ('.implode(',', $images_to_add).')
@@ -562,7 +562,7 @@ SELECT image_id, filesize, width, height
           else
           {
             $derivative = new DerivativeImage($this->data['size'], $src_image);
-            
+
             if (!file_exists($derivative->get_path()))
             {
               // we shouldn't be here
@@ -674,43 +674,81 @@ SELECT SUM(filesize) AS total
   }
 
   /**
-   * getDownloadList
-   * @return: string html
-   */
-  function getDownloadList($url='')
-  {
-    if ($this->data['nb_images'] == 0)
-    {
-      return '<b>'.l10n('No archive').'</b>';
-    }
-
-    $root_url = get_root_url();
-
-    $out = '';
-    for ($i=1; $i<=$this->getEstimatedArchiveNumber(); $i++)
-    {
-      $out.= '<li id="zip-'.$i.'">';
-
-      if ($this->data['status']=='done' or ($this->conf['one_archive'] and $i<$this->data['last_zip']+1))
-      {
-        $out.= '<img src="'.$root_url.BATCH_DOWNLOAD_PATH.'template/images/drive_error.png"> '.l10n('Archive #%d (already downloaded)', $i);
-      }
-      else if ($i==$this->data['last_zip']+1 or (!$this->conf['one_archive'] and $i<$this->data['last_zip']+1))
-      {
-          $out.= '<a href="'.add_url_params($url, array('set_id'=>$this->data['id'],'zip'=>$i)).'" rel="nofollow" style="font-weight:bold;"'
-            .(($i!=1 and $this->conf['one_archive']) ? ' onClick="return confirm(\''.addslashes(l10n('Starting download Archive #%d will destroy Archive #%d, be sure you finish the download. Continue ?', $i, $i-1)).'\');"' : null).
-            '><img src="'.$root_url.BATCH_DOWNLOAD_PATH.'template/images/drive_go.png"> '.l10n('Archive #%d (ready)', $i).'</a>';
-      }
-      else
-      {
-        $out.= '<img src="'.$root_url.BATCH_DOWNLOAD_PATH.'template/images/drive.png"> '.l10n('Archive #%d (pending)', $i);
-      }
-
-      $out.= '</li>';
-    }
-
-    return $out;
+ * getDownloadList
+ * @param string $url
+ * @return array Tableau d'archives ou un tableau associatif d'erreur
+ */
+function getDownloadList($url = '')
+{
+  if ($this->data['nb_images'] == 0) {
+    return array('error' => l10n('No archive'));
   }
+
+  $root_url = get_root_url();
+  $archives = array();
+
+  // On récupère la taille totale estimée (en Ko).
+  // Par exemple, getEstimatedTotalSize() renvoie la taille en Ko
+  // (selon la logique existante dans votre plugin).
+  $total_estimated_ko = $this->getEstimatedTotalSize();
+
+  // Nombre d'archives théoriques
+  $nbArchives = $this->getEstimatedArchiveNumber();
+
+  for ($i = 1; $i <= $nbArchives; $i++)
+  {
+    $archive = array();
+    $archive['id'] = $i;
+
+    // Vérification de l'état
+    if ($this->data['status'] == 'done' or ($this->conf['one_archive'] and $i < $this->data['last_zip'] + 1))
+    {
+      $archive['status'] = 'downloaded';
+      $archive['label'] = l10n('Archive #%d (already downloaded)', $i);
+      $archive['icon'] = $root_url . BATCH_DOWNLOAD_PATH . 'template/images/drive_error.png';
+      $archive['url'] = '';
+      $archive['confirm'] = null;
+    }
+    else if ($i == $this->data['last_zip'] + 1 or (!$this->conf['one_archive'] and $i < $this->data['last_zip'] + 1))
+    {
+      $archive['status'] = 'ready';
+      $archive['label'] = l10n('Archive #%d (ready)', $i);
+      $archive['icon'] = $root_url . BATCH_DOWNLOAD_PATH . 'template/images/drive_go.png';
+      $archive['url'] = add_url_params($url, array('set_id' => $this->data['id'], 'zip' => $i));
+      if ($i != 1 and $this->conf['one_archive']) {
+        $archive['confirm'] = l10n('Starting download Archive #%d will destroy Archive #%d, be sure you finish the download. Continue ?', $i, $i - 1);
+      } else {
+        $archive['confirm'] = null;
+      }
+    }
+    else
+    {
+      $archive['status'] = 'pending';
+      $archive['label'] = l10n('Archive #%d (pending)', $i);
+      $archive['icon'] = $root_url . BATCH_DOWNLOAD_PATH . 'template/images/drive.png';
+      $archive['url'] = '';
+      $archive['confirm'] = null;
+    }
+
+    // --- Calcul de la taille de l'archive ---
+    $archive_path = $this->getArchivePath($i);
+    if (file_exists($archive_path)) {
+      // Archive générée : taille réelle
+      $size_ko = filesize($archive_path) / 1024;
+      $archive['size_estimated'] = false;
+    } else {
+      // Archive non générée : estimation
+      // Simple : on divise la taille totale estimée par le nb d'archives
+      $size_ko = ($nbArchives > 0) ? ($total_estimated_ko / $nbArchives) : 0;
+      $archive['size_estimated'] = true;
+    }
+    $archive['size_ko'] = $size_ko;
+
+    $archives[] = $archive;
+  }
+
+  return $archives;
+}
 
   /**
    * getArchivePath
@@ -729,8 +767,7 @@ SELECT SUM(filesize) AS total
 
     $path = BATCH_DOWNLOAD_LOCAL . 'u-'. $this->data['user_id'] . '/';
     $path.= !empty($this->conf['archive_prefix']) ? $this->conf['archive_prefix'] . '_' : null;
-    $path.= $set['BASENAME'] . '_' . $this->data['size'] . '_';
-    $path.= $this->data['user_id'] . $this->data['id'];
+    $path.= $set['BASENAME'];
     $path.= '_part' . $i . '.zip';
 
     return $path;
@@ -939,30 +976,39 @@ SELECT SUM(filesize) AS total
     return $set;
   }
 
-  /**
-   * getSetInfo
-   * @return: array
-   */
-  function getSetInfo()
-  {
-    $set = array(
-      'NB_IMAGES' =>     $this->data['nb_images'],
-      'NB_ARCHIVES' =>   $this->data['status']=='new' ? l10n('Unknown') : $this->getEstimatedArchiveNumber(),
-      'STATUS' =>        $this->data['status']=='ready' ? 'new' : $this->data['status'],
-      'LAST_ZIP' =>      $this->data['last_zip'],
-      'TOTAL_SIZE' =>    $this->data['status']=='new' ? l10n('Unknown') : l10n('%d MB', ceil($this->getEstimatedTotalSize()/1024)),
-      'DATE_CREATION' => format_date($this->data['date_creation'], true),
-      'SIZE' =>          $this->data['size'],
+    /**
+     * getSetInfo
+     * @return: array
+     */
+    function getSetInfo()
+    {
+      // On construit le tableau de base
+      $set = array(
+        'NB_IMAGES'     => $this->data['nb_images'],
+        'NB_ARCHIVES'   => $this->data['status'] == 'new' ? l10n('Unknown') : $this->getEstimatedArchiveNumber(),
+        'STATUS'        => $this->data['status'] == 'ready' ? 'new' : $this->data['status'],
+        'LAST_ZIP'      => $this->data['last_zip'],
+        'TOTAL_SIZE'    => $this->data['status'] == 'new' ? l10n('Unknown') : l10n('%d MB', ceil($this->getEstimatedTotalSize() / 1024)),
+        'DATE_CREATION' => format_date($this->data['date_creation'], true),
+        'SIZE'          => $this->data['size'],
       );
 
-    if ($this->data['size'] != 'original')
-    {
-      $params = ImageStdParams::get_by_type($this->data['size']);
-      $set['SIZE_INFO'] = $params->sizing->ideal_size[0].' x '.$params->sizing->ideal_size[1];
-    }
+      if ($this->data['size'] != 'original')
+      {
+        $params = ImageStdParams::get_by_type($this->data['size']);
+        if (isset($params->sizing->ideal_size) && is_array($params->sizing->ideal_size) && count($params->sizing->ideal_size) >= 2) {
+          $set['SIZE_INFO'] = $params->sizing->ideal_size[0] . ' x ' . $params->sizing->ideal_size[1];
+        } else {
+          $set['SIZE_INFO'] = l10n('Unknown');
+        }
+      }
+      else
+      {
+        $set['SIZE_INFO'] = l10n('Original');
+      }
 
-    return array_merge($set, $this->getNames());
-  }
+      return array_merge($set, $this->getNames());
+    }
 
   /**
    * delete

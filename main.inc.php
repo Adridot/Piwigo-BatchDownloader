@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: Batch Downloader
-Version: auto
+Version: 15.c
 Description: Allows users to download pictures sets in ZIP. Compatible with User Collections.
-Plugin URI: auto
+Plugin URI: https://piwigo.org/ext/extension_view.php?eid=616
 Author: Mistic
 Author URI: http://www.strangeplanet.fr
 Has Settings: true
