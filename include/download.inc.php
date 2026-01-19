@@ -62,7 +62,13 @@ switch ($page['sub_section'])
           // generate missing files
           if (count($missing_derivatives))
           {
-            $template->assign('missing_derivatives', $missing_derivatives);
+            $template->assign(
+              array(
+                'missing_derivatives' => $missing_derivatives,
+                'missing_derivatives_count' => count($missing_derivatives),
+                'missing_derivatives_string' => '"'.implode('","', $missing_derivatives).'"',
+              )
+            );
           }
           // set is ready
           else

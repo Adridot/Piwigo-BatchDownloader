@@ -14,9 +14,9 @@ setTimeout(function() {
 
 {footer_script}
 var derivatives = {
-  elements: ["{'","'|@implode:$missing_derivatives}"],
+  elements: [{$missing_derivatives_string}],
   done: 0,
-  total: {$missing_derivatives|@count},
+  total: {$missing_derivatives_count},
 
   finished: function() {
     return derivatives.done == derivatives.total;
