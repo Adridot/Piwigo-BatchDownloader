@@ -302,7 +302,7 @@ SELECT image_id, filemtime
     }
 
     $query = '
-SELECT id, path, width, height, rotation, representative_ext
+SELECT id, path, width, height, filesize, rotation, representative_ext
   FROM '.IMAGES_TABLE.'
   WHERE id IN('.implode(',', $image_ids).')
   ORDER BY id DESC
@@ -335,6 +335,22 @@ SELECT id, path, width, height, rotation, representative_ext
       else
       {
         $derivative = new DerivativeImage($this->data['size'], $src_image);
+
+	// in case the derivative is actually the original size (if XXL is bigger than
+	// original, for example), we do not need to generate anything
+        if ($derivative->same_as_source())
+        {
+          $inserts[ $row['id'] ] = array(
+            'image_id' => $row['id'],
+            'type' => $this->data['size'],
+            'width' => $row['width'],
+            'height' => $row['height'],
+            'filesize' => $row['filesize'],
+            'filemtime' => @filemtime(PHPWG_ROOT_PATH.$row['path']),
+            );
+
+          continue;
+        }
 
         $filemtime = @filemtime($derivative->get_path());
         $src_mtime = @filemtime(PHPWG_ROOT_PATH.$row['path']);
