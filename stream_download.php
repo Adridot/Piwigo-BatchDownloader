@@ -12,12 +12,23 @@ else
 
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
 
-$autoload_path = dirname(__FILE__).'/vendor/autoload.php';
+$autoload_candidates = array(
+  dirname(__FILE__).'/vendor/autoload.php',
+  PHPWG_ROOT_PATH.'plugins/BatchDownloader/vendor/autoload.php',
+  dirname(__FILE__).'/../BatchDownloader/vendor/autoload.php',
+);
 $zipstream_available = false;
-if (file_exists($autoload_path))
+foreach ($autoload_candidates as $autoload_path)
 {
-  require_once($autoload_path);
-  $zipstream_available = class_exists('ZipStream\\ZipStream');
+  if (file_exists($autoload_path))
+  {
+    require_once($autoload_path);
+    $zipstream_available = class_exists('ZipStream\\ZipStream');
+    if ($zipstream_available)
+    {
+      break;
+    }
+  }
 }
 
 use ZipStream\CompressionMethod;
@@ -25,6 +36,11 @@ use ZipStream\OperationMode;
 use ZipStream\ZipStream;
 
 check_status(ACCESS_GUEST);
+
+function batch_download_redirect_to_native_flow($set_id)
+{
+  redirect(add_url_params(BATCH_DOWNLOAD_PUBLIC . 'init_zip', array('set_id' => $set_id)));
+}
 
 if (check_download_access() === false)
 {
@@ -53,15 +69,22 @@ try
 
   if (!$zipstream_available)
   {
-    // Safe fallback when ZipStream is not installed or not autoloadable.
-    $BatchDownloader->deleteArchives();
-    $BatchDownloader->createNextArchive(true);
-    redirect(get_root_url().BATCH_DOWNLOAD_PATH.'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1');
+    // Fallback to native zip generation workflow.
+    batch_download_redirect_to_native_flow($BatchDownloader->getParam('id'));
   }
 
   if ($BatchDownloader->getParam('nb_images') == 0)
   {
     throw new Exception('No images in this set');
+  }
+
+  // Avoid long-running stream requests that are likely to be terminated by FPM.
+  if (
+    $BatchDownloader->getParam('size') != 'original'
+    || $BatchDownloader->getEstimatedArchiveNumber() > 1
+  )
+  {
+    batch_download_redirect_to_native_flow($BatchDownloader->getParam('id'));
   }
 
   $images = $BatchDownloader->getImages();

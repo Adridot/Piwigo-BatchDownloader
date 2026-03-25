@@ -95,7 +95,18 @@ function batch_download_index_button()
       {
         if (!empty($conf['batch_download']['direct_stream_download']))
         {
-          redirect(get_root_url().BATCH_DOWNLOAD_PATH.'stream_download.php?set_id='.$BatchDownloader->getParam('id'));
+          // Stream mode is reliable only for single-archive, original-size sets.
+          // Fallback to native flow for larger or resized sets to avoid FPM timeouts.
+          if (
+            $BatchDownloader->getParam('size') == 'original'
+            and $BatchDownloader->getParam('nb_images') <= $conf['batch_download']['max_elements']
+            and $BatchDownloader->getEstimatedArchiveNumber() == 1
+          )
+          {
+            redirect(get_root_url().BATCH_DOWNLOAD_PATH.'stream_download.php?set_id='.$BatchDownloader->getParam('id'));
+          }
+
+          redirect(add_url_params(BATCH_DOWNLOAD_PUBLIC . 'init_zip', array('set_id'=>$BatchDownloader->getParam('id'))));
         }
         // if we plan only one zip with less elements than 'max_elements', the download starts immediately
         if (

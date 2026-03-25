@@ -1,5 +1,15 @@
 <?php
-define('PHPWG_ROOT_PATH', '../../');
+$docker_root = '/app/www/public/';
+
+if (file_exists($docker_root.'include/common.inc.php'))
+{
+  define('PHPWG_ROOT_PATH', $docker_root);
+}
+else
+{
+  define('PHPWG_ROOT_PATH', '../../');
+}
+
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
 
 check_status(ACCESS_GUEST);
