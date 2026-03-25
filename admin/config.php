@@ -20,7 +20,7 @@ if (isset($_POST['save_config']))
     'archive_timeout' => intval($_POST['archive_timeout']),
     'max_elements'    => intval($_POST['max_elements']),
     'max_size'        => intval($_POST['max_size']),
-    'one_archive'     => isset($_POST['one_archive']),
+    'one_archive'     => true,
     'force_pclzip'    => isset($_POST['force_pclzip']),
     'direct'          => isset($_POST['direct']),
     'last_clean'      => $conf['batch_download']['last_clean'],

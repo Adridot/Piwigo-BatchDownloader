@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: Batch Downloader
-Version: 16.a
+Version: auto
 Description: Allows users to download pictures sets in ZIP. Compatible with User Collections.
-Plugin URI: https://piwigo.org/ext/extension_view.php?eid=616
+Plugin URI: auto
 Author: Mistic
 Author URI: http://www.strangeplanet.fr
 Has Settings: true
@@ -32,6 +32,9 @@ define('BATCH_DOWNLOAD_LOCAL',   PHPWG_ROOT_PATH . $conf['data_location'] . 'dow
 define('BATCH_DOWNLOAD_ADMIN',   get_root_url() . 'admin.php?page=plugin-BatchDownloader');
 define('BATCH_DOWNLOAD_PUBLIC',  get_absolute_root_url() . make_index_url(array('section' => 'download')) . '/');
 define('BATCH_DOWNLOAD_TREQUESTS', $prefixeTable . 'download_requests');
+
+// Minimal custom behavior over upstream.
+define('BATCH_DOWNLOAD_SHOW_PENDING_MENU', false);
 
 add_event_handler('init', 'batch_download_init');
 
@@ -72,6 +75,7 @@ function batch_download_init()
   }
 
   $conf['batch_download'] = safe_unserialize($conf['batch_download']);
+  $conf['batch_download']['one_archive'] = true;
   $conf['batch_download']['file_pattern'] = isset($conf['batch_download_file_pattern']) ? $conf['batch_download_file_pattern'] : '%id%_%filename%_%dimensions%';
   $conf['batch_download']['allowed_ext'] = $conf['picture_ext'];
   if (!empty($conf['batch_download_additional_ext']))

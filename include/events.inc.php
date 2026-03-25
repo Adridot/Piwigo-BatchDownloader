@@ -93,27 +93,7 @@ function batch_download_index_button()
 
       if ($BatchDownloader->getParam('nb_images') != 0)
       {
-        // if we plan only one zip with less elements than 'max_elements', the download starts immediately
-        if (
-          $BatchDownloader->getParam('nb_images') <= $conf['batch_download']['max_elements']
-          and $BatchDownloader->getParam('size') == 'original'
-          and $BatchDownloader->getEstimatedArchiveNumber() == 1
-        )
-        {
-          $BatchDownloader->createNextArchive(true); // make sure we have only one zip, even if 'max_size' is exceeded
-
-          $u_download = get_root_url().BATCH_DOWNLOAD_PATH . 'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1';
-
-          $null = null;
-          $template->block_footer_script(null, 'setTimeout("document.location.href = \''.$u_download.'\';", 1000);', $null, $null);
-
-          $page['infos'][] = l10n('The archive is downloading, if the download doesn\'t start automatically please <a href="%s">click here</a>', $u_download);
-        }
-        // otherwise we go to summary page
-        else
-        {
-          redirect(add_url_params(BATCH_DOWNLOAD_PUBLIC . 'init_zip', array('set_id'=>$BatchDownloader->getParam('id'))));
-        }
+        redirect(get_root_url().BATCH_DOWNLOAD_PATH.'stream_download.php?set_id='.$BatchDownloader->getParam('id'));
       }
       else
       {
@@ -239,6 +219,11 @@ function batch_download_add_menublock($menu_ref_arr)
 {
   global $user;
 
+  if (!BATCH_DOWNLOAD_SHOW_PENDING_MENU)
+  {
+    return;
+  }
+
   if (is_a_guest())
   {
     return;
@@ -266,6 +251,11 @@ SELECT id
 function batch_download_applymenu($menu_ref_arr)
 {
   global $template, $conf, $user;
+
+  if (!BATCH_DOWNLOAD_SHOW_PENDING_MENU)
+  {
+    return;
+  }
 
   $menu = &$menu_ref_arr[0];
   $block = $menu->get_block('mbBatchDownloader');
