@@ -19,14 +19,12 @@ class BatchDownloader_maintain extends PluginMaintain
     'max_elements'    => 500,
     'max_size'        => 100, /* MB */
     'last_clean'      => 0,
-    'one_archive'     => false,
+    'one_archive'     => true,
     'force_pclzip'    => false,
     'direct'          => false,
     'request_permission' => false,
     'general_conditions_link' => null,
     'request_permission_auto_accept' => false,
-    'direct_stream_download' => false,
-    'hide_pending_menu_block' => false,
     );
   
   function __construct($id)
@@ -74,17 +72,13 @@ class BatchDownloader_maintain extends PluginMaintain
       }
       if (!isset($new_conf['one_archive']))
       {
-        $new_conf['one_archive'] = false;
+        $new_conf['one_archive'] = true;
         $new_conf['force_pclzip'] = isset($conf['batch_download_force_pclzip']) && $conf['batch_download_force_pclzip'];
         $new_conf['direct'] = isset($conf['batch_download_direct']) && $conf['batch_download_direct'];
       }
-      if (!isset($new_conf['direct_stream_download']))
+      else
       {
-        $new_conf['direct_stream_download'] = false;
-      }
-      if (!isset($new_conf['hide_pending_menu_block']))
-      {
-        $new_conf['hide_pending_menu_block'] = false;
+        $new_conf['one_archive'] = true;
       }
       if (!isset($new_conf['multisize']))
       {

@@ -12,48 +12,20 @@ else
 
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
 
-$autoload_candidates = array(
-  dirname(__FILE__).'/vendor/autoload.php',
-  PHPWG_ROOT_PATH.'plugins/BatchDownloader/vendor/autoload.php',
-  dirname(__FILE__).'/../BatchDownloader/vendor/autoload.php',
-);
-$zipstream_available = false;
-foreach ($autoload_candidates as $autoload_path)
+$autoload_path = dirname(__FILE__).'/vendor/autoload.php';
+if (!file_exists($autoload_path))
 {
-  if (file_exists($autoload_path))
-  {
-    require_once($autoload_path);
-    $zipstream_available = class_exists('ZipStream\\ZipStream');
-    if ($zipstream_available)
-    {
-      break;
-    }
-  }
+  http_response_code(500);
+  echo 'ZipStream dependency is missing';
+  exit(0);
 }
+require_once($autoload_path);
 
 use ZipStream\CompressionMethod;
 use ZipStream\OperationMode;
 use ZipStream\ZipStream;
 
 check_status(ACCESS_GUEST);
-
-function batch_download_redirect_to_native_flow($set_id)
-{
-  $script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-  $native_path = preg_replace(
-    '#/plugins/BatchDownloader/[^/]+$#',
-    '/index.php?/download/init_zip',
-    $script_name
-  );
-
-  if (empty($native_path) || $native_path === $script_name)
-  {
-    $native_path = '/index.php?/download/init_zip';
-  }
-
-  $native_url = add_url_params($native_path, array('set_id' => $set_id));
-  redirect($native_url);
-}
 
 if (check_download_access() === false)
 {
@@ -73,31 +45,11 @@ try
 {
   global $conf, $pwg_loaded_plugins;
 
-  if (empty($conf['batch_download']['direct_stream_download']))
-  {
-    throw new Exception('Direct stream mode is disabled');
-  }
-
   $BatchDownloader = new BatchDownloader($_GET['set_id']);
-
-  if (!$zipstream_available)
-  {
-    // Fallback to native zip generation workflow.
-    batch_download_redirect_to_native_flow($BatchDownloader->getParam('id'));
-  }
 
   if ($BatchDownloader->getParam('nb_images') == 0)
   {
     throw new Exception('No images in this set');
-  }
-
-  // Avoid long-running stream requests that are likely to be terminated by FPM.
-  if (
-    $BatchDownloader->getParam('size') != 'original'
-    || $BatchDownloader->getEstimatedArchiveNumber() > 1
-  )
-  {
-    batch_download_redirect_to_native_flow($BatchDownloader->getParam('id'));
   }
 
   $images = $BatchDownloader->getImages();
@@ -253,7 +205,7 @@ SELECT image_id, filesize, width, height
   }
 
   $zip = new ZipStream(
-    operationMode: OperationMode::NORMAL,
+    operationMode: OperationMode::SIMULATE_LAX,
     outputName: $zip_filename,
     defaultCompressionMethod: CompressionMethod::STORE,
     defaultEnableZeroHeader: false,
@@ -276,6 +228,8 @@ SELECT image_id, filesize, width, height
     );
   }
 
+  $zip_size = $zip->finish();
+
   $safe_name = trim(str_replace(array('"', "'", '\\', ';', "\n", "\r"), '', $zip_filename));
   $encoded_name = rawurlencode($safe_name);
 
@@ -284,8 +238,9 @@ SELECT image_id, filesize, width, height
   header('Pragma: public');
   header('Cache-Control: public, must-revalidate');
   header('Content-Transfer-Encoding: binary');
+  header('Content-Length: '.$zip_size);
 
-  $zip->finish();
+  $zip->executeSimulation();
 
   $BatchDownloader->updateParam('total_size', $total_size);
   $BatchDownloader->updateParam('nb_zip', 1);
@@ -306,7 +261,7 @@ UPDATE '.BATCH_DOWNLOAD_TIMAGES.'
 
   trigger_notify('batchdownload_end_zip', $BatchDownloader->getParam('id'), $images_added);
 }
-catch (Throwable $e)
+catch (Exception $e)
 {
   if (!headers_sent())
   {

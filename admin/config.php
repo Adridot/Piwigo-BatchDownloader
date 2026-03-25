@@ -20,15 +20,13 @@ if (isset($_POST['save_config']))
     'archive_timeout' => intval($_POST['archive_timeout']),
     'max_elements'    => intval($_POST['max_elements']),
     'max_size'        => intval($_POST['max_size']),
-    'one_archive'     => isset($_POST['one_archive']),
+    'one_archive'     => true,
     'force_pclzip'    => isset($_POST['force_pclzip']),
     'direct'          => isset($_POST['direct']),
     'last_clean'      => $conf['batch_download']['last_clean'],
     'request_permission' => isset($_POST['request_permission']),
     'general_conditions_link' => isset($_POST['general_conditions_link']) ? $_POST['general_conditions_link'] : null,
     'request_permission_auto_accept' => isset($_POST['request_permission_auto_accept']),
-    'direct_stream_download' => isset($_POST['direct_stream_download']),
-    'hide_pending_menu_block' => isset($_POST['hide_pending_menu_block']),
     );
 
   conf_update_param('batch_download', $conf['batch_download']);

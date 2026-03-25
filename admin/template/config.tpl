@@ -149,20 +149,6 @@ $('input[name="multisize"]').on('change', function() {
   <ul>
     <li>
       <label>
-        <input type="checkbox" name="direct_stream_download" {if $batch_download.direct_stream_download}checked{/if}>
-        <b>{'Enable direct stream download mode'|translate}</b>
-      </label>
-      <a class="icon-info-circled-1 showInfo" title="{'Downloads start immediately as a single streamed ZIP with browser progress support.'|translate}"></a>
-    </li>
-    <li>
-      <label>
-        <input type="checkbox" name="hide_pending_menu_block" {if $batch_download.hide_pending_menu_block}checked{/if}>
-        <b>{'Hide pending downloads menu block'|translate}</b>
-      </label>
-      <a class="icon-info-circled-1 showInfo" title="{'When enabled, the "Downloads" block is hidden from the menu.'|translate}"></a>
-    </li>
-    <li>
-      <label>
         <b>{'Delete downloads after'|translate}</b>
         <input type="text" name="archive_timeout" value="{$batch_download.archive_timeout}" size="3"> {'hours'|translate}
       </label>
