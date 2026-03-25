@@ -39,10 +39,19 @@ check_status(ACCESS_GUEST);
 
 function batch_download_redirect_to_native_flow($set_id)
 {
-  $native_url = get_root_url().add_url_params(
-    make_index_url(array('section' => 'download')).'/init_zip',
-    array('set_id' => $set_id)
+  $script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+  $native_path = preg_replace(
+    '#/plugins/BatchDownloader/[^/]+$#',
+    '/index.php?/download/init_zip',
+    $script_name
   );
+
+  if (empty($native_path) || $native_path === $script_name)
+  {
+    $native_path = '/index.php?/download/init_zip';
+  }
+
+  $native_url = add_url_params($native_path, array('set_id' => $set_id));
   redirect($native_url);
 }
 
