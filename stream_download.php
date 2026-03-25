@@ -45,6 +45,11 @@ try
 {
   global $conf, $pwg_loaded_plugins;
 
+  if (empty($conf['batch_download']['direct_stream_download']))
+  {
+    throw new Exception('Direct stream mode is disabled');
+  }
+
   $BatchDownloader = new BatchDownloader($_GET['set_id']);
 
   if ($BatchDownloader->getParam('nb_images') == 0)
