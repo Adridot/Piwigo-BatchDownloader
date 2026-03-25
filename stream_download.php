@@ -13,13 +13,12 @@ else
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
 
 $autoload_path = dirname(__FILE__).'/vendor/autoload.php';
-if (!file_exists($autoload_path))
+$zipstream_available = false;
+if (file_exists($autoload_path))
 {
-  http_response_code(500);
-  echo 'ZipStream dependency is missing';
-  exit(0);
+  require_once($autoload_path);
+  $zipstream_available = class_exists('ZipStream\\ZipStream');
 }
-require_once($autoload_path);
 
 use ZipStream\CompressionMethod;
 use ZipStream\OperationMode;
@@ -51,6 +50,14 @@ try
   }
 
   $BatchDownloader = new BatchDownloader($_GET['set_id']);
+
+  if (!$zipstream_available)
+  {
+    // Safe fallback when ZipStream is not installed or not autoloadable.
+    $BatchDownloader->deleteArchives();
+    $BatchDownloader->createNextArchive(true);
+    redirect(get_root_url().BATCH_DOWNLOAD_PATH.'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1');
+  }
 
   if ($BatchDownloader->getParam('nb_images') == 0)
   {
@@ -266,7 +273,7 @@ UPDATE '.BATCH_DOWNLOAD_TIMAGES.'
 
   trigger_notify('batchdownload_end_zip', $BatchDownloader->getParam('id'), $images_added);
 }
-catch (Exception $e)
+catch (Throwable $e)
 {
   if (!headers_sent())
   {
