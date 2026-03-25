@@ -52,6 +52,18 @@ try
     throw new Exception('No images in this set');
   }
 
+  // Dependency fallback: if ZipStream classes are unavailable, use native one-archive download.
+  if (!class_exists('ZipStream\\ZipStream') || !class_exists('ZipStream\\OperationMode'))
+  {
+    if ($BatchDownloader->getParam('status') == 'new' || $BatchDownloader->getParam('status') == 'ready')
+    {
+      $BatchDownloader->deleteArchives();
+      $BatchDownloader->createNextArchive(true);
+    }
+
+    redirect(get_root_url().BATCH_DOWNLOAD_PATH.'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1');
+  }
+
   $images = $BatchDownloader->getImages();
   $image_ids = array_keys($images);
 
