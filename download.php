@@ -1,9 +1,6 @@
 <?php
-$webRoot = $_SERVER['DOCUMENT_ROOT'];
-$webRootPath = $webRoot.'/';
-define('PHPWG_ROOT_PATH', $webRootPath);
+define('PHPWG_ROOT_PATH', '/app/www/public/');
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
-
 
 check_status(ACCESS_GUEST);
 

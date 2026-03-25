@@ -80,6 +80,22 @@ switch ($page['sub_section'])
 
       $set = $BatchDownloader->getSetInfo();
 
+      // Check for streaming availability
+      $use_streaming = false;
+      if (isset($conf['batch_download']['use_streaming']) && $conf['batch_download']['use_streaming'])
+      {
+        $estimated_size_mb = ceil($BatchDownloader->getEstimatedTotalSize() / 1024); // KB to MB
+        // Default to 5000MB if not set
+        $streaming_max = isset($conf['batch_download']['streaming_max_size']) ? $conf['batch_download']['streaming_max_size'] : 5000;
+        
+        if ($estimated_size_mb <= $streaming_max)
+        {
+          $use_streaming = true;
+          $set['U_STREAM'] = get_root_url().BATCH_DOWNLOAD_PATH . 'stream_download.php?set_id='.$_GET['set_id'];
+        }
+      }
+      $template->assign('use_streaming', $use_streaming);
+
       // link to the zip
       if (isset($next_file))
       {

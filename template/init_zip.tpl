@@ -1,17 +1,5 @@
 {combine_css path=$BATCH_DOWNLOAD_PATH|cat:"template/style.css"}
 
-{if $set.U_DOWNLOAD|default: null}
-{footer_script}
-setTimeout(function() {
-  document.location.href = '{$set.U_DOWNLOAD}';
-}, 1000);
-{/footer_script}
-{/if}
-
-{if $missing_derivatives|default: null}
-  {* Gestion des dérivés (non modifiée) *}
-{/if}
-
 {if $set}
 <div class="download-container">
 
@@ -42,22 +30,47 @@ setTimeout(function() {
     </p>
   </div>
 
-<!-- Bloc 2 : Instructions -->
-<div class="download-instructions-block">
-  <p>
-    <strong>Votre téléchargement est prêt.</strong><br>
-    En raison de la taille conséquente du dossier de photos, celui-ci a été divisé en plusieurs archives.<br>
-  </p>
-  <ul class="download-instructions-list">
-    <li>Chaque archive peut peser jusqu'à <strong>800 Mo</strong>.</li>
-    <li>La compression sur le serveur et le téléchargement peuvent prendre quelques minutes.</li>
-    <li>Assurez-vous que le téléchargement de chaque archive est terminé avant de lancer la suivante.</li>
-    <li>Si vous rencontrez un problème, vérifiez votre connexion internet et réessayez.</li>
-  </ul>
-  <p>
-    <em>Note : Le système d'extraction natif de Windows et macOS vous permettra de décompresser facilement les fichiers ZIP téléchargés.</em>
-  </p>
-</div>
+{if $use_streaming}
+  <!-- MODE STREAMING -->
+  <div class="download-streaming-block">
+    <p class="streaming-info">
+      <strong>Votre téléchargement est prêt.</strong><br>
+      Le fichier ZIP sera généré et téléchargé directement.<br>
+      Le téléchargement va commencer automatiquement dans quelques secondes.
+    </p>
+    
+    <div class="streaming-action">
+      <a href="{$set.U_STREAM}" class="big-download-button">
+        <span class="icon-download"></span> Télécharger l'album complet
+      </a>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+  setTimeout(function() {
+    window.location.href = '{$set.U_STREAM}';
+  }, 1500);
+  </script>
+
+{else}
+  <!-- MODE ARCHIVES MULTIPLES -->
+  <div class="download-instructions-block">
+    <p>
+      <strong>Votre téléchargement est prêt.</strong><br>
+      En raison de la taille conséquente du dossier de photos, celui-ci a été divisé en plusieurs archives.<br>
+    </p>
+    <ul class="download-instructions-list">
+      <li>Chaque archive peut peser jusqu'à <strong>800 Mo</strong>.</li>
+      <li>La compression sur le serveur et le téléchargement peuvent prendre quelques minutes.</li>
+      <li>Vous pouvez lancer le téléchargement de toutes les archives automatiquement.</li>
+    </ul>
+    
+    <div class="download-all-container">
+      <button id="btn-download-all" onclick="startDownloadAll()" class="download-all-button">
+        Tout télécharger automatiquement
+      </button>
+    </div>
+  </div>
 
   <!-- Bloc 3 : Archives + bouton d’annulation -->
   <div class="download-archives-block">
@@ -67,9 +80,6 @@ setTimeout(function() {
         {foreach from=$zip_links item=archive}
           {*
             Conversion de la taille de chaque archive.
-            $archive.size_ko est en KiB, donc :
-              bytes = size_ko * 1024
-              Mo base10 = bytes / 1,000,000
           *}
           {assign var="bytesArchive" value=$archive.size_ko * 1024}
           {assign var="moArchive" value=$bytesArchive / 1000000}
@@ -82,7 +92,7 @@ setTimeout(function() {
             {assign var="archiveDisplaySize" value=$moArchive|string_format:"%.2f"}
           {/if}
 
-          <div class="archive-card">
+          <div class="archive-card" id="archive-card-{$archive.id}" data-url="{$archive.url}" data-status="{$archive.status}">
             <div class="archive-header">
               <img src="{$archive.icon}" alt="" class="archive-icon">
               <span class="archive-title">Archive #{$archive.id}</span>
@@ -95,19 +105,16 @@ setTimeout(function() {
               {/if}
             </div>
             <div class="archive-action">
-              {if $archive.status == 'ready'}
-                <a href="{$archive.url}" class="archive-button"
-                   data-archive-id="{$archive.id}"
-                   onclick="return onDownloadClick(this){if $archive.confirm} && confirm('{$archive.confirm}'){/if};">
-                  {$archive.label}
+              {if $archive.status == 'ready' or $archive.status == 'pending'}
+                <a href="{$archive.url}" class="archive-button" target="download_frame_{$archive.id}">
+                  Télécharger
                 </a>
-              {elseif $archive.status == 'pending'}
-                <button class="archive-button disabled" disabled="disabled">
-                  {$archive.label}
-                </button>
               {elseif $archive.status == 'downloaded'}
-                <span class="archive-downloaded">{$archive.label}</span>
+                <span class="archive-downloaded">Téléchargé</span>
               {/if}
+              <div class="progress-bar-bg" style="display:none;">
+                 <div class="progress-bar-fill" style="width:0%"></div>
+              </div>
             </div>
           </div>
         {/foreach}
@@ -124,18 +131,77 @@ setTimeout(function() {
       </div>
     {/if}
   </div>
+  
+  <div id="hidden-iframes" style="display:none;"></div>
+
+  <script type="text/javascript">
+  {literal}
+  var archivesToDownload = [];
+  var currentDownloadIndex = 0;
+
+  function startDownloadAll() {
+    archivesToDownload = [];
+    $('.archive-card').each(function() {
+      var status = $(this).data('status');
+      if (status == 'ready' || status == 'pending') {
+         archivesToDownload.push($(this).attr('id'));
+      }
+    });
+    
+    if (archivesToDownload.length > 0) {
+      $('#btn-download-all').prop('disabled', true).text('Téléchargement en cours...');
+      currentDownloadIndex = 0;
+      processNextDownload();
+    }
+  }
+
+  function processNextDownload() {
+    if (currentDownloadIndex >= archivesToDownload.length) {
+       $('#btn-download-all').text('Téléchargements terminés');
+       return;
+    }
+    
+    var cardId = archivesToDownload[currentDownloadIndex];
+    var $card = $('#' + cardId);
+    var url = $card.data('url');
+    var archiveId = cardId.replace('archive-card-', '');
+    
+    // Update UI
+    $card.find('.archive-button').hide();
+    $card.find('.progress-bar-bg').show();
+    $card.find('.progress-bar-fill').animate({width: '100%'}, 2000); // Fake progress for visual feedback
+    
+    // Create iframe
+    var iframeId = 'download_frame_' + archiveId;
+    var $iframe = $('<iframe id="' + iframeId + '" name="' + iframeId + '"></iframe>');
+    $('#hidden-iframes').append($iframe);
+    
+    // Trigger download
+    // Note: The download script should return a file, so the load event might not trigger correctly on all browsers
+    // but for the sake of chaining, we might use a timeout or try to detect
+    // Actually, since we need to wait for the server to generate the zip (if not ready)
+    // we should wait.
+    
+    $iframe.attr('src', url);
+    
+    // Assume download starts/completes after a delay or when iframe loads (if it returns a page on error)
+    // Since it's a file download, iframe load event is tricky.
+    // For this implementation, we will use a timeout to start the next one, 
+    // assuming the browser handles the download queue or the server handles the generation.
+    // If generation is synchronous, the server won't respond until zip is ready.
+    // So we can try to wait for some response? 
+    // Actually, simple chaining with delay is safer for now.
+    
+    setTimeout(function() {
+       $card.find('.progress-bar-bg').hide();
+       $card.find('.archive-action').append('<span class="archive-downloaded">Téléchargé (lancé)</span>');
+       currentDownloadIndex++;
+       processNextDownload();
+    }, 5000); // 5 seconds delay between starts
+  }
+  {/literal}
+  </script>
+{/if}
 
 </div>
 {/if}
-
-
-<script type="text/javascript">
-function onDownloadClick(el) {
-  // Affiche un petit spinner statique dans le bouton
-  el.innerHTML = '<span class="spinner"></span> Préparation...';
-  // On ne bloque pas la suite, la page se rechargera quand le ZIP sera prêt
-  return true;
-}
-{footer_script}
-{/footer_script}
-</script>

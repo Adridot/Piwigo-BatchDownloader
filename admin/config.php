@@ -58,6 +58,7 @@ $sizes_options['original'] = l10n('Original');
 // max values
 $conf['batch_download']['max_elements_value'] = isset($conf['batch_download_max_elements']) ? $conf['batch_download_max_elements'] : 1000;
 $conf['batch_download']['max_size_value'] =     isset($conf['batch_download_max_size']) ?     $conf['batch_download_max_size'] :     500;
+$conf['batch_download']['streaming_max_size_value'] = isset($conf['batch_download_streaming_max_size']) ? $conf['batch_download_streaming_max_size'] : 10000;
 
 //Request permission
 $template->assign( 'BATCH_DWN_REQUEST_CONF', conf_get_param('batch_download_configure_request_permission', false));

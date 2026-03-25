@@ -71,13 +71,17 @@ var batchdown_string = "{'Confirm the download of %d pictures?'|translate}";
 {if isset($BATCH_DWN_SIZES)}
   (SwitchBox=window.SwitchBox||[]).push("#batchDownloadLink", "#batchDownloadBox");
 
+  /*
   jQuery("#batchDownloadBox .batchDownloadSizeList a").click(function() {
     return confirm(batchdown_string.replace('%d', batchdown_count));
   });
+  */
 {else}
+  /*
   jQuery("#batchDownloadLink").click(function() {
     return confirm(batchdown_string.replace('%d', batchdown_count));
   });
+  */
 {/if}
 
 {/footer_script}
