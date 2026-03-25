@@ -217,7 +217,7 @@ SELECT image_id, filesize, width, height
   }
 
   $zip = new ZipStream(
-    operationMode: OperationMode::SIMULATE_LAX,
+    operationMode: OperationMode::NORMAL,
     outputName: $zip_filename,
     defaultCompressionMethod: CompressionMethod::STORE,
     defaultEnableZeroHeader: false,
@@ -240,8 +240,6 @@ SELECT image_id, filesize, width, height
     );
   }
 
-  $zip_size = $zip->finish();
-
   $safe_name = trim(str_replace(array('"', "'", '\\', ';', "\n", "\r"), '', $zip_filename));
   $encoded_name = rawurlencode($safe_name);
 
@@ -250,9 +248,8 @@ SELECT image_id, filesize, width, height
   header('Pragma: public');
   header('Cache-Control: public, must-revalidate');
   header('Content-Transfer-Encoding: binary');
-  header('Content-Length: '.$zip_size);
 
-  $zip->executeSimulation();
+  $zip->finish();
 
   $BatchDownloader->updateParam('total_size', $total_size);
   $BatchDownloader->updateParam('nb_zip', 1);
