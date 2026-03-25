@@ -72,6 +72,21 @@ function batch_download_init()
   }
 
   $conf['batch_download'] = safe_unserialize($conf['batch_download']);
+
+  if (!isset($conf['batch_download']['direct_stream_download']))
+  {
+    $conf['batch_download']['direct_stream_download'] = false;
+  }
+  if (!isset($conf['batch_download']['hide_pending_menu_block']))
+  {
+    $conf['batch_download']['hide_pending_menu_block'] = false;
+  }
+
+  if (!empty($conf['batch_download']['direct_stream_download']))
+  {
+    // Direct stream mode always produces a single archive stream.
+    $conf['batch_download']['one_archive'] = true;
+  }
   $conf['batch_download']['file_pattern'] = isset($conf['batch_download_file_pattern']) ? $conf['batch_download_file_pattern'] : '%id%_%filename%_%dimensions%';
   $conf['batch_download']['allowed_ext'] = $conf['picture_ext'];
   if (!empty($conf['batch_download_additional_ext']))

@@ -27,6 +27,8 @@ if (isset($_POST['save_config']))
     'request_permission' => isset($_POST['request_permission']),
     'general_conditions_link' => isset($_POST['general_conditions_link']) ? $_POST['general_conditions_link'] : null,
     'request_permission_auto_accept' => isset($_POST['request_permission_auto_accept']),
+    'direct_stream_download' => isset($_POST['direct_stream_download']),
+    'hide_pending_menu_block' => isset($_POST['hide_pending_menu_block']),
     );
 
   conf_update_param('batch_download', $conf['batch_download']);

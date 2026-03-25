@@ -93,6 +93,10 @@ function batch_download_index_button()
 
       if ($BatchDownloader->getParam('nb_images') != 0)
       {
+        if (!empty($conf['batch_download']['direct_stream_download']))
+        {
+          redirect(get_root_url().BATCH_DOWNLOAD_PATH.'stream_download.php?set_id='.$BatchDownloader->getParam('id'));
+        }
         // if we plan only one zip with less elements than 'max_elements', the download starts immediately
         if (
           $BatchDownloader->getParam('nb_images') <= $conf['batch_download']['max_elements']
@@ -239,6 +243,10 @@ function batch_download_add_menublock($menu_ref_arr)
 {
   global $user;
 
+  if (!empty($GLOBALS['conf']['batch_download']['hide_pending_menu_block']))
+  {
+    return;
+  }
   if (is_a_guest())
   {
     return;
@@ -267,6 +275,10 @@ function batch_download_applymenu($menu_ref_arr)
 {
   global $template, $conf, $user;
 
+  if (!empty($GLOBALS['conf']['batch_download']['hide_pending_menu_block']))
+  {
+    return;
+  }
   $menu = &$menu_ref_arr[0];
   $block = $menu->get_block('mbBatchDownloader');
 
