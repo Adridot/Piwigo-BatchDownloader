@@ -39,7 +39,11 @@ check_status(ACCESS_GUEST);
 
 function batch_download_redirect_to_native_flow($set_id)
 {
-  redirect(add_url_params(BATCH_DOWNLOAD_PUBLIC . 'init_zip', array('set_id' => $set_id)));
+  $native_url = get_root_url().add_url_params(
+    make_index_url(array('section' => 'download')).'/init_zip',
+    array('set_id' => $set_id)
+  );
+  redirect($native_url);
 }
 
 if (check_download_access() === false)
