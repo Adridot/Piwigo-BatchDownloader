@@ -126,45 +126,26 @@ $('input[name="multisize"]').on('change', function() {
       </label>
     </li>
     <div id="request_perm_options" {if !$batch_download.request_permission}style="display:none;"{/if}>
-    <li>
-      <b>{'Link to general conditions of use page'|translate}</b>
-      <input id="batch_dwn_general_conditions_link" name="general_conditions_link" value="{$batch_download.general_conditions_link}" size="50">
-      <a class="icon-info-circled-1 showInfo" title="{'This is used in the email sent when a users download request is accepted.'|translate}"></a>
-    </li>
-    <li id="request_permission_auto_accept">
-      <label>
-        <input type="checkbox" name="request_permission_auto_accept" {if $batch_download.request_permission_auto_accept}checked{/if}>
-        <b>{'Automatically accept user download requests'|translate}</b>
-        <a class="icon-info-circled-1 showInfo" title="{'All requests shall be accepted when submitted'|translate}"></a>
-      </label>
-    </li>
+      <li>
+        <b>{'Link to general conditions of use page'|translate}</b>
+        <input id="batch_dwn_general_conditions_link" name="general_conditions_link" value="{$batch_download.general_conditions_link}" size="50">
+        <a class="icon-info-circled-1 showInfo" title="{'This is used in the email sent when a users download request is accepted.'|translate}"></a>
+      </li>
+      <li id="request_permission_auto_accept">
+        <label>
+          <input type="checkbox" name="request_permission_auto_accept" {if $batch_download.request_permission_auto_accept}checked{/if}>
+          <b>{'Automatically accept user download requests'|translate}</b>
+          <a class="icon-info-circled-1 showInfo" title="{'All requests shall be accepted when submitted'|translate}"></a>
+        </label>
+      </li>
     </div>
     {/if}
-    </ul>
-    </fieldset>
+  </ul>
+</fieldset>
 
-    <fieldset>
-    <legend><span class="icon-download icon-blue"></span>{'Streaming'|translate}</legend>
-    <ul>
-    <li>
-    <label>
-      <input type="checkbox" name="use_streaming" {if $batch_download.use_streaming}checked{/if}>
-      <b>{'Use ZipStream-PHP for on-the-fly downloads'|translate}</b>
-    </label>
-    <a class="icon-info-circled-1 showInfo" title="{'Starts download immediately without temporary files. Recommended.'|translate}"></a>
-    </li>
-    <li>
-    <label>
-      <b>{'Maximum size for streaming (in Megabytes)'|translate}</b>
-      <div id="streaming_max_size"></div>
-      <input type="text" name="streaming_max_size" value="{$batch_download.streaming_max_size}" size="5">
-    </label>
-    </li>
-    </ul>
-    </fieldset>
+<fieldset>
+  <legend><span class="icon-download icon-yellow"></span>{'Archives'|translate}</legend>
 
-    <fieldset>
-    <legend><span class="icon-download icon-yellow"></span>{'Archives'|translate}</legend>
   <ul>
     <li>
       <label>

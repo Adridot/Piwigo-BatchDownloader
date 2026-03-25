@@ -1,5 +1,5 @@
 <?php
-define('PHPWG_ROOT_PATH', '/app/www/public/');
+define('PHPWG_ROOT_PATH', '../../');
 include(PHPWG_ROOT_PATH.'include/common.inc.php');
 
 check_status(ACCESS_GUEST);

@@ -25,8 +25,6 @@ class BatchDownloader_maintain extends PluginMaintain
     'request_permission' => false,
     'general_conditions_link' => null,
     'request_permission_auto_accept' => false,
-    'use_streaming' => true,
-    'streaming_max_size' => 5000, /* MB */
     );
   
   function __construct($id)

@@ -100,15 +100,9 @@ function batch_download_index_button()
           and $BatchDownloader->getEstimatedArchiveNumber() == 1
         )
         {
-          if (isset($conf['batch_download']['use_streaming']) && $conf['batch_download']['use_streaming'])
-          {
-             $u_download = get_root_url().BATCH_DOWNLOAD_PATH . 'stream_download.php?set_id='.$BatchDownloader->getParam('id');
-          }
-          else
-          {
-            $BatchDownloader->createNextArchive(true); // make sure we have only one zip, even if 'max_size' is exceeded
-            $u_download = get_root_url().BATCH_DOWNLOAD_PATH . 'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1';
-          }
+          $BatchDownloader->createNextArchive(true); // make sure we have only one zip, even if 'max_size' is exceeded
+
+          $u_download = get_root_url().BATCH_DOWNLOAD_PATH . 'download.php?set_id='.$BatchDownloader->getParam('id').'&zip=1';
 
           $null = null;
           $template->block_footer_script(null, 'setTimeout("document.location.href = \''.$u_download.'\';", 1000);', $null, $null);
@@ -317,7 +311,7 @@ function batch_download_clean()
   $time = time();
 
   // we only search for old downloads every hour, nevermind which user is connected
-  if ($conf['batch_download']['last_clean'] > $time - 900) return;
+  if ($conf['batch_download']['last_clean'] > $time - 3600) return;
 
   $conf['batch_download']['last_clean'] = $time;
   conf_update_param('batch_download', $conf['batch_download']);
